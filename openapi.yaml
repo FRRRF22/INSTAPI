@@ -1,0 +1,97 @@
+openapi: 3.1.0
+info:
+  title: InstaDownload UK API
+  version: 1.0.0
+  description: Secure API for authorized public Reels, video/IGTV links, and profile metadata.
+servers:
+  - url: https://api.example.com
+paths:
+  /health:
+    get:
+      summary: Health and provider readiness
+      responses:
+        '200':
+          description: Service is running
+  /api/v1/extract:
+    post:
+      summary: Prepare a temporary MP4 download for a supported Instagram media URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [url, confirmRights]
+              properties:
+                url:
+                  type: string
+                  maxLength: 2048
+                  format: uri
+                confirmRights:
+                  type: boolean
+                  const: true
+      responses:
+        '200':
+          description: Temporary download is ready
+        '400':
+          description: Invalid URL or request
+        '403':
+          description: Access is not permitted
+        '413':
+          description: Media exceeds the configured size limit
+        '429':
+          description: Rate limit exceeded
+        '502':
+          description: Extractor/CDN failure
+        '503':
+          description: Licensed extraction provider is not configured
+  /api/v1/profile:
+    post:
+      summary: Read metadata and limited recent media links for a public profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [url, confirmAccess]
+              properties:
+                url:
+                  type: string
+                  maxLength: 2048
+                  format: uri
+                confirmAccess:
+                  type: boolean
+                  const: true
+      responses:
+        '200':
+          description: Public profile data
+        '400':
+          description: Invalid profile URL or request
+        '403':
+          description: Private profiles are not supported
+        '404':
+          description: Profile is unavailable
+        '429':
+          description: Rate limit exceeded
+        '503':
+          description: Licensed provider is not configured
+  /api/v1/download/{id}:
+    get:
+      summary: Stream a temporary file from an allow-listed provider CDN
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: MP4 or profile image stream
+        '404':
+          description: Link expired or unknown
+        '413':
+          description: File exceeds configured size limit
